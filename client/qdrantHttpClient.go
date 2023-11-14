@@ -24,26 +24,50 @@ func CreateHttpclient(schema string, hostname string, port int) *QDrantHttpClien
 	}
 }
 
-func (client *QDrantHttpClient) GetPoints(collectionName string, request *point.PointsStringGetRequest) point.PointsGetResponse {
+func (client *QDrantHttpClient) GetPoints(collectionName string, request *point.PointsStringGetRequest) (point.PointsGetResponse, error) {
 	bytesData, _ := json.Marshal(request)
 	url := client.Scheme + "://" + client.HostName + ":" + strconv.Itoa(client.Port) + "/collections/" + collectionName + "/points"
-	resp, _ := http.Post(url, "application/json", bytes.NewReader(bytesData))
-	body, _ := io.ReadAll(resp.Body)
+	resp, err := http.Post(url, "application/json", bytes.NewReader(bytesData))
+	if err != nil {
+		return point.PointsGetResponse{}, err
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return point.PointsGetResponse{}, err
+	}
 	response := &point.PointsGetResponse{}
-	json.Unmarshal(body, response)
-	return *response
+	err = json.Unmarshal(body, response)
+	if err != nil {
+		return point.PointsGetResponse{}, err
+	}
+	return *response, nil
 }
 
-func (client *QDrantHttpClient) UpsertPoints(collectionName string, request *point.PointsListUpsertRequest) point.UpdateResultResponse {
-	bytesData, _ := json.Marshal(request)
+func (client *QDrantHttpClient) UpsertPoints(collectionName string, request *point.PointsListUpsertRequest) (point.UpdateResultResponse, error) {
+	bytesData, err := json.Marshal(request)
+	if err != nil {
+		return point.UpdateResultResponse{}, err
+	}
 	url := client.Scheme + "://" + client.HostName + ":" + strconv.Itoa(client.Port) + "/collections/" + collectionName + "/points"
-	req, _ := http.NewRequest("PUT", url, bytes.NewBuffer(bytesData))
+	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(bytesData))
+	if err != nil {
+		return point.UpdateResultResponse{}, err
+	}
 	req.Header.Set("Content-Type", "application/json")
 	httpClient := &http.Client{}
-	resp, _ := httpClient.Do(req)
-	body, _ := io.ReadAll(resp.Body)
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return point.UpdateResultResponse{}, err
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return point.UpdateResultResponse{}, err
+	}
 	defer resp.Body.Close()
 	response := &point.UpdateResultResponse{}
-	json.Unmarshal(body, response)
-	return *response
+	err = json.Unmarshal(body, response)
+	if err != nil {
+		return point.UpdateResultResponse{}, err
+	}
+	return *response, nil
 }

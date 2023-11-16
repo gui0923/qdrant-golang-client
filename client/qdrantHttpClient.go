@@ -71,3 +71,32 @@ func (client *QDrantHttpClient) UpsertPoints(collectionName string, request *poi
 	}
 	return *response, nil
 }
+
+func (client *QDrantHttpClient) DeletePoints(collectionName string, request *point.PointsListDeleteRequest) (point.UpdateResultResponse, error) {
+	bytesData, err := json.Marshal(request)
+	if err != nil {
+		return point.UpdateResultResponse{}, err
+	}
+	url := client.Scheme + "://" + client.HostName + ":" + strconv.Itoa(client.Port) + "/collections/" + collectionName + "/points/delete"
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(bytesData))
+	if err != nil {
+		return point.UpdateResultResponse{}, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	httpClient := &http.Client{}
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return point.UpdateResultResponse{}, err
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return point.UpdateResultResponse{}, err
+	}
+	defer resp.Body.Close()
+	response := &point.UpdateResultResponse{}
+	err = json.Unmarshal(body, response)
+	if err != nil {
+		return point.UpdateResultResponse{}, err
+	}
+	return *response, nil
+}

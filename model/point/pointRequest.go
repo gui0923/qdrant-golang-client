@@ -40,3 +40,7 @@ type UpdateResultResponse struct {
 	model.AbstractResponse
 	Result UpdateResult `json:"result"`
 }
+
+type PointsListDeleteRequest struct {
+	Points []string `json:"points"`
+}

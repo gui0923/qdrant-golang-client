@@ -25,13 +25,12 @@ func CreateHttpclient(schema string, hostname string, port int) *QDrantHttpClien
 }
 
 func (client *QDrantHttpClient) GetPoints(collectionName string, request *point.PointsStringGetRequest) (point.PointsGetResponse, error) {
-	bytesData, _ := json.Marshal(request)
-	url := client.Scheme + "://" + client.HostName + ":" + strconv.Itoa(client.Port) + "/collections/" + collectionName + "/points"
-	resp, err := http.Post(url, "application/json", bytes.NewReader(bytesData))
+	bytesData, err := json.Marshal(request)
 	if err != nil {
 		return point.PointsGetResponse{}, err
 	}
-	body, err := io.ReadAll(resp.Body)
+	url := client.Scheme + "://" + client.HostName + ":" + strconv.Itoa(client.Port) + "/collections/" + collectionName + "/points"
+	body, err := requestHttp(url, "GET", bytesData)
 	if err != nil {
 		return point.PointsGetResponse{}, err
 	}
@@ -49,27 +48,7 @@ func (client *QDrantHttpClient) UpsertPoints(collectionName string, request *poi
 		return point.UpdateResultResponse{}, err
 	}
 	url := client.Scheme + "://" + client.HostName + ":" + strconv.Itoa(client.Port) + "/collections/" + collectionName + "/points"
-	req, err := http.NewRequest("PUT", url, bytes.NewBuffer(bytesData))
-	if err != nil {
-		return point.UpdateResultResponse{}, err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	httpClient := &http.Client{}
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return point.UpdateResultResponse{}, err
-	}
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return point.UpdateResultResponse{}, err
-	}
-	defer resp.Body.Close()
-	response := &point.UpdateResultResponse{}
-	err = json.Unmarshal(body, response)
-	if err != nil {
-		return point.UpdateResultResponse{}, err
-	}
-	return *response, nil
+	return doUpdateRequest(url, "PUT", bytesData)
 }
 
 func (client *QDrantHttpClient) DeletePoints(collectionName string, request *point.PointsListDeleteRequest) (point.UpdateResultResponse, error) {
@@ -78,25 +57,37 @@ func (client *QDrantHttpClient) DeletePoints(collectionName string, request *poi
 		return point.UpdateResultResponse{}, err
 	}
 	url := client.Scheme + "://" + client.HostName + ":" + strconv.Itoa(client.Port) + "/collections/" + collectionName + "/points/delete"
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(bytesData))
+	return doUpdateRequest(url, "POST", bytesData)
+}
+
+func doUpdateRequest(url string, method string, bytesData []byte) (point.UpdateResultResponse, error) {
+	body, err := requestHttp(url, method, bytesData)
 	if err != nil {
 		return point.UpdateResultResponse{}, err
 	}
-	req.Header.Set("Content-Type", "application/json")
-	httpClient := &http.Client{}
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return point.UpdateResultResponse{}, err
-	}
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return point.UpdateResultResponse{}, err
-	}
-	defer resp.Body.Close()
 	response := &point.UpdateResultResponse{}
 	err = json.Unmarshal(body, response)
 	if err != nil {
 		return point.UpdateResultResponse{}, err
 	}
 	return *response, nil
+}
+
+func requestHttp(url string, method string, bytesData []byte) ([]byte, error) {
+	req, err := http.NewRequest(method, url, bytes.NewBuffer(bytesData))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	httpClient := &http.Client{}
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	return body, nil
 }

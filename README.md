@@ -1,2 +1,2 @@
 # qdrant-golang-client
- Golang Client for qdrant vector database
+ Golang Http Client for qdrant vector database

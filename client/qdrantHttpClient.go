@@ -30,7 +30,12 @@ func (client *QDrantHttpClient) GetPoints(collectionName string, request *point.
 		return point.PointsGetResponse{}, err
 	}
 	url := client.Scheme + "://" + client.HostName + ":" + strconv.Itoa(client.Port) + "/collections/" + collectionName + "/points"
-	body, err := requestHttp(url, "GET", bytesData)
+	resp, err := http.Post(url, "application/json", bytes.NewReader(bytesData))
+	if err != nil {
+		return point.PointsGetResponse{}, err
+	}
+	body, err := io.ReadAll(resp.Body)
+	defer resp.Body.Close()
 	if err != nil {
 		return point.PointsGetResponse{}, err
 	}
